@@ -1,0 +1,26 @@
+FROM rocm/dev-ubuntu-22.04:latest
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    git \
+    unzip \
+    libzip-dev \
+    wget \
+    git-lfs
+
+RUN mkdir -p /mlc-llm/cuda
+RUN mkdir -p /mlc-llm/rocm
+
+# Set up Python virtual environment and install dependencies for ROCm
+WORKDIR /mlc-llm/rocm
+RUN cd /mlc-llm/rocm && python3 -m venv venv && \
+    . venv/bin/activate && \
+    python -m pip install --default-timeout=9999 --retries 20 --pre -U -f https://mlc.ai/wheels mlc-llm-nightly-rocm62 mlc-ai-nightly-rocm62 && \
+    python -m pip install --default-timeout=300 --retries 10 -r requirements.txt
+
+COPY compile_model.sh /compile_model.sh
+RUN chmod +x /compile_model.sh
+
+CMD ["/compile_model.sh"]

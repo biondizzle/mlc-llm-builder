@@ -1,0 +1,27 @@
+FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
+
+RUN apt-get update && apt-get install -y \
+    nvidia-container-toolkit \
+    python3 \
+    python3-pip \
+    python3-venv \
+    git \
+    unzip \
+    libzip-dev \
+    wget \
+    git-lfs
+
+RUN mkdir -p /mlc-llm/cuda
+RUN mkdir -p /mlc-llm/rocm
+
+# Set up Python virtual environment and install dependencies for cuda
+WORKDIR /mlc-llm/cuda
+RUN cd /mlc-llm/cuda && python3 -m venv venv && \
+    . venv/bin/activate && \
+    python -m pip install --default-timeout=9999 --retries 20 --pre -U -f https://mlc.ai/wheels mlc-llm-nightly-cu123 mlc-ai-nightly-cu123 && \
+    python -m pip install --default-timeout=300 --retries 10 -r requirements.txt
+
+COPY compile_model.sh /compile_model.sh
+RUN chmod +x /compile_model.sh
+
+CMD ["/compile_model.sh"]
